@@ -2,7 +2,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- Configuración de Supabase ---
     const SUPABASE_URL = 'https://zxycpmxdniqtgmwrtaeo.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_NrC1VDFAIQ8h0I-e9ShwEw_fN7QGs1Y';
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let supabaseClient = null;
+    try {
+        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    } catch (e) {
+        console.error('Error initializing Supabase client:', e);
+    }
 
     // --- Estado Global ---
     let transactions = [];
@@ -45,6 +51,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- Persistencia ---
     async function syncSettings() {
+        if (!supabaseClient) return;
         const { error } = await supabaseClient
             .from('user_settings')
             .upsert({ id: 1, cycle_type: cycleType, cycle_start_day: cycleStartDay, cycle_start_date: cycleStartDate });
@@ -52,6 +59,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function migrateLocalStorage() {
+        if (!supabaseClient) return;
         const localTransactions = JSON.parse(localStorage.getItem('myFinances_transactions'));
         const localCategories = JSON.parse(localStorage.getItem('myFinances_categories'));
 
@@ -87,6 +95,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function loadData() {
+        if (!supabaseClient) return;
         // Load Transactions
         const { data: tData, error: tError } = await supabaseClient.from('transactions').select('*').order('date', { ascending: false });
         if (tError) console.error('Error loading transactions:', tError);
@@ -174,6 +183,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function addCategory() {
+        if (!supabaseClient) {
+            alert('Error: No hay conexión con la base de datos.');
+            return;
+        }
         const name = categoryFormInput.value.trim();
         const type = categoryFormType.value;
         if (name && !categories.find(c => c.name === name)) {
@@ -299,6 +312,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- Eventos ---
     transactionForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        if (!supabaseClient) {
+            alert('Error: No hay conexión con la base de datos.');
+            return;
+        }
         const amount = parseFloat(document.getElementById('amount').value);
         const type = document.getElementById('type').value;
         const category = document.getElementById('category').value;
@@ -361,6 +378,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     categoriesListDiv.addEventListener('click', async (e) => {
         if (e.target.classList.contains('remove-cat')) {
+            if (!supabaseClient) {
+                alert('Error: No hay conexión con la base de datos.');
+                return;
+            }
             const id = e.target.dataset.id;
             const { error } = await supabaseClient.from('categories').delete().eq('id', id);
             if (error) {
@@ -374,6 +395,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     transactionListDiv.addEventListener('click', async (e) => {
         if (e.target.classList.contains('delete-transaction')) {
+            if (!supabaseClient) {
+                alert('Error: No hay conexión con la base de datos.');
+                return;
+            }
             const id = e.target.dataset.id;
             const { error } = await supabaseClient.from('transactions').delete().eq('id', id);
             if (error) {
@@ -386,6 +411,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     clearDataBtn.addEventListener('click', async () => {
+        if (!supabaseClient) {
+            alert('Error: No hay conexión con la base de datos.');
+            return;
+        }
         if (confirm('¿Limpiar todos los datos en la nube?')) {
             await supabaseClient.from('transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
             await supabaseClient.from('categories').delete().neq('id', '00000000-0000-0000-0000-000000000000');
@@ -397,21 +426,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // Inicialización
-    await migrateLocalStorage();
-    await loadData();
+    try {
+        console.log('Iniciando carga de datos...');
+        await migrateLocalStorage();
+        await loadData();
+    } catch (error) {
+        console.error('Error crítico durante la inicialización:', error);
+        alert('Hubo un problema al conectar con la nube, pero la app intentará seguir funcionando.');
+    } finally {
+        cycleTypeSelect.value = cycleType;
+        cycleStartDaySelect.value = cycleStartDay;
+        cycleStartDateInput.value = cycleStartDate;
+        if (cycleType === 'weekly') {
+            weeklyStartContainer.classList.remove('hidden');
+            monthlyStartContainer.classList.add('hidden');
+        } else {
+            weeklyStartContainer.classList.add('hidden');
+            monthlyStartContainer.classList.remove('hidden');
+        }
 
-    cycleTypeSelect.value = cycleType;
-    cycleStartDaySelect.value = cycleStartDay;
-    cycleStartDateInput.value = cycleStartDate;
-    if (cycleType === 'weekly') {
-        weeklyStartContainer.classList.remove('hidden');
-        monthlyStartContainer.classList.add('hidden');
-    } else {
-        weeklyStartContainer.classList.add('hidden');
-        monthlyStartContainer.classList.remove('hidden');
+        document.getElementById('date').valueAsDate = new Date();
+        renderCategories();
+        renderTransactions();
+        console.log('Inicialización completada.');
     }
-
-    document.getElementById('date').valueAsDate = new Date();
-    renderCategories();
-    renderTransactions();
 });
