@@ -1,0 +1,194 @@
+document.addEventListener('DOMContentLoaded', () => {
+    // --- Estado de la Aplicación ---
+    let transactions = JSON.parse(localStorage.getItem('myFinances_transactions')) || [];
+    let categories = JSON.parse(localStorage.getItem('myFinances_categories')) || ['Comida', 'Transporte', 'Sueldo', 'Ocio'];
+
+    // --- Elementos del DOM ---
+    const transactionForm = document.getElementById('transaction-form');
+    const categoryFormInput = document.getElementById('new-category-name');
+    const addCategoryBtn = document.getElementById('add-category-btn');
+    const categorySelect = document.getElementById('category');
+    const categoriesListDiv = document.getElementById('categories-list');
+    const transactionListDiv = document.getElementById('transaction-list');
+    const totalBalanceEl = document.getElementById('total-balance');
+    const totalIncomeEl = document.getElementById('total-income');
+    const totalExpenseEl = document.getElementById('total-expense');
+    const clearDataBtn = document.getElementById('clear-data-btn');
+
+    // --- Funciones de Persistencia ---
+    function saveToLocalStorage() {
+        localStorage.setItem('myFinances_transactions', JSON.stringify(transactions));
+        localStorage.setItem('myFinanzas_categories', JSON.stringify(categories)); // Fixed typo from myFinances
+        // Wait, using same key for consistency
+        localStorage.setItem('myFinances_categories', JSON.stringify(categories));
+    }
+
+    // --- Lógica de Categorías ---
+    function renderCategories() {
+        // Limpiar select
+        categorySelect.innerHTML = '<option value="" disabled selected>Selecciona una categoría</option>';
+        // Limpiar lista de tags
+        categoriesListDiv.innerHTML = '';
+
+        categories.forEach((cat, index) => {
+            // Llenar Select
+            const option = document.createElement('option');
+            option.value = cat;
+            option.textContent = cat;
+            categorySelect.appendChild(option);
+
+            // Llenar Tags
+            const tag = document.createElement('div');
+            tag.className = 'category-tag';
+            tag.innerHTML = `
+                ${cat}
+                <span class="remove-cat" data-index="${index}">&times;</span>
+            `;
+            categoriesListDiv.appendChild(tag);
+        });
+    }
+
+    function addCategory() {
+        const name = categoryFormInput.value.trim();
+        if (name && !categories.includes(name)) {
+            categories.push(name);
+            categoryFormInput.value = '';
+            saveToLocalStorage();
+            renderCategories();
+        }
+    }
+
+    // --- Lógica de Transacciones ---
+    function renderTransactions() {
+        transactionListDiv.innerHTML = '';
+
+        // Obtener rango de la semana actual
+        const now = new Date();
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - now.getDay());
+        startOfWeek.setHours(0,0,0,0);
+
+        // Filtrar solo transacciones de la semana actual para el historial visual
+        const weeklyTransactions = transactions.filter(t => {
+            const tDate = new Date(t.date);
+            return tDate >= startOfWeek;
+        });
+
+        if (weeklyTransactions.length === 0) {
+            transactionListDiv.innerHTML = '<p style="text-align:center; color:var(--text-muted);">No hay movimientos esta semana.</p>';
+        }
+
+        // Ordenar por fecha descendente
+        weeklyTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        weeklyTransactions.forEach(t => {
+            const item = document.createElement('div');
+            item.className = 'transaction-item';
+            const isIncome = t.type === 'income';
+
+            item.innerHTML = `
+                <div class="transaction-info">
+                    <h4>${t.description}</h4>
+                    <p>${t.category} • ${t.date}</p>
+                </div>
+                <div class="transaction-amount">
+                    <span class="amount-value ${isIncome ? 'amount-income' : 'amount-expense'}">
+                        ${isIncome ? '+' : '-'}$${Math.abs(t.amount).toFixed(2)}
+                    </span>
+                    <button class="delete-transaction" data-id="${t.id}">&times;</button>
+                </div>
+            `;
+            transactionListDiv.appendChild(item);
+        });
+
+        updateSummary();
+    }
+
+    function updateSummary() {
+        const now = new Date();
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - now.getDay());
+        startOfWeek.setHours(0,0,0,0);
+
+        const weekly = transactions.filter(t => new Date(t.date) >= startOfWeek);
+
+        const income = weekly
+            .filter(t => t.type === 'income')
+            .reduce((acc, t) => acc + t.amount, 0);
+
+        const expense = weekly
+            .filter(t => t.type === 'expense')
+            .reduce((acc, t) => acc + t.amount, 0);
+
+        const balance = income - expense;
+
+        totalBalanceEl.textContent = `$${balance.toFixed(2)}`;
+        totalIncomeEl.textContent = `$${income.toFixed(2)}`;
+        totalExpenseEl.textContent = `$${expense.toFixed(2)}`;
+    }
+
+    function addTransaction(e) {
+        e.preventDefault();
+
+        const amount = parseFloat(document.getElementById('amount').value);
+        const type = document.getElementById('type').value;
+        const category = document.getElementById('category').value;
+        const description = document.getElementById('description').value;
+        const date = document.getElementById('date').value;
+
+        if (!amount || !category || !description || !date) return;
+
+        const newTransaction = {
+            id: Date.now(),
+            amount,
+            type,
+            category,
+            description,
+            date
+        };
+
+        transactions.push(newTransaction);
+        saveToLocalStorage();
+        renderTransactions();
+        transactionForm.reset();
+    }
+
+    // --- Eventos ---
+    transactionForm.addEventListener('submit', addTransaction);
+    addCategoryBtn.addEventListener('click', addCategory);
+
+    // Delegación de eventos para borrar categorías
+    categoriesListDiv.addEventListener('click', (e) => {
+        if (e.target.classList.contains('remove-cat')) {
+            const index = e.target.dataset.index;
+            categories.splice(index, 1);
+            saveToLocalStorage();
+            renderCategories();
+        }
+    });
+
+    // Delegación de eventos para borrar transacciones
+    transactionListDiv.addEventListener('click', (e) => {
+        if (e.target.classList.contains('delete-transaction')) {
+            const id = parseInt(e.target.dataset.id);
+            transactions = transactions.filter(t => t.id !== id);
+            saveToLocalStorage();
+            renderTransactions();
+        }
+    });
+
+    clearDataBtn.addEventListener('click', () => {
+        if (confirm('¿Estás seguro de que quieres borrar todos los datos?')) {
+            transactions = [];
+            saveToLocalStorage();
+            renderTransactions();
+        }
+    });
+
+    // Inicialización
+    // Establecer fecha de hoy por defecto en el input
+    document.getElementById('date').valueAsDate = new Date();
+
+    renderCategories();
+    renderTransactions();
+});
