@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finanzas | Intelligence & Design</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="theme-light">
+
+    <!-- PLANO 1: LANDING -->
+    <div id="plane-landing" class="plane active">
+        <nav class="navbar">
+            <div class="nav-container">
+                <a href="#" class="logo">FINANZAS<span class="dot">.</span></a>
+                <div class="nav-menu">
+                    <a href="#" class="nav-link">Filosofía</a>
+                    <a href="#" class="btn-nav" onclick="switchPlane('plane-app')">Empezar</a>
+                </div>
+            </div>
+        </nav>
+
+        <main class="hero-container">
+            <div class="hero-content reveal">
+                <h1 class="hero-title">Domina tu flujo,<br>diseña tu futuro.</h1>
+                <p class="hero-subtitle">Mucho más que un registro. Una herramienta de inteligencia financiera diseñada para la claridad absoluta.</p>
+                <div class="hero-actions">
+                    <button class="btn-primary" onclick="switchPlane('plane-app')">Iniciar Experiencia</button>
+                </div>
+            </div>
+            <div class="hero-visual reveal">
+                <div class="visual-card">
+                    <div class="v-line"></div>
+                    <div class="v-circle"></div>
+                    <div class="v-box"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- PLANO 2: APP -->
+    <div id="plane-app" class="plane">
+        <nav class="app-navbar">
+            <div class="app-nav-container">
+                <a href="#" class="logo" onclick="switchPlane('plane-landing')">← Volver</a>
+                <div class="app-nav-title">Control Financiero</div>
+                <div class="app-nav-user" id="current-period-label">Semana Actual</div>
+            </div>
+        </nav>
+
+        <main class="app-main">
+            <!-- Selector de Temporalidad y Ciclos -->
+            <section class="time-scale-selector reveal">
+                <div class="scale-options">
+                    <button class="scale-btn active" data-scale="daily">Diario</button>
+                    <button class="scale-btn" data-scale="weekly">Semanal</button>
+                    <button class="scale-btn" data-scale="monthly">Mensual</button>
+                    <button class="scale-btn" data-scale="yearly">Anual</button>
+                </div>
+
+                <div class="cycle-config">
+                    <div class="config-item">
+                        <span class="label">Ciclo:</span>
+                        <select id="cycle-type">
+                            <option value="weekly">Semanal</option>
+                            <option value="monthly">Mensual</option>
+                        </select>
+                    </div>
+                    <div class="config-item" id="weekly-start-container">
+                        <span class="label">Inicia:</span>
+                        <select id="cycle-start-day">
+                            <option value="0">Domingo</option>
+                            <option value="1">Lunes</option>
+                            <option value="2">Martes</option>
+                            <option value="3">Miércoles</option>
+                            <option value="4">Jueves</option>
+                            <option value="5">Viernes</option>
+                            <option value="6">Sábado</option>
+                        </select>
+                    </div>
+                    <div class="config-item hidden" id="monthly-start-container">
+                        <span class="label">Día:</span>
+                        <input type="number" id="cycle-start-date" min="1" max="31" value="1" style="width: 50px; padding: 2px 5px;">
+                    </div>
+                </div>
+            </section>
+
+            <!-- Gráficos -->
+            <section class="charts-grid">
+                <div class="chart-card main-chart">
+                    <div class="chart-header">
+                        <h3 id="chart-title-flow">Flujo de Caja</h3>
+                        <span class="chart-tag" id="chart-tag-flow">Periodo</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="mainFlowChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card mini-chart">
+                    <div class="chart-header">
+                        <h3 id="chart-title-health">Salud Financiera</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="healthChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card mini-chart">
+                    <div class="chart-header">
+                        <h3 id="chart-title-dist">Distribución</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Totales -->
+            <section class="quick-stats">
+                <div class="stat-item">
+                    <span class="label">Balance</span>
+                    <h2 id="total-balance">$0.00</h2>
+                </div>
+                <div class="stat-item income">
+                    <span class="label">Ingresos</span>
+                    <p id="total-income">$0.00</p>
+                </div>
+                <div class="stat-item expense">
+                    <span class="label">Gastos</span>
+                    <p id="total-expense">$0.00</p>
+                </div>
+            </section>
+
+            <div class="app-content-grid">
+                <div class="panel entry-panel">
+                    <h3>Nuevo Movimiento</h3>
+                    <form id="transaction-form">
+                        <div class="field">
+                            <label>Monto</label>
+                            <input type="number" id="amount" step="0.01" placeholder="0.00" required>
+                        </div>
+                        <div class="field-row">
+                            <div class="field">
+                                <label>Tipo</label>
+                                <select id="type" required>
+                                    <option value="income">Ingreso</option>
+                                    <option value="expense">Gasto</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label>Categoría</label>
+                                <select id="category" required>
+                                    <option value="" disabled selected>Seleccionar</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label>Descripción</label>
+                            <input type="text" id="description" placeholder="Detalle..." required>
+                        </div>
+                        <div class="field">
+                            <label>Fecha</label>
+                            <input type="date" id="date" required>
+                        </div>
+                        <button type="submit" class="btn-submit">Registrar</button>
+                    </form>
+                </div>
+
+                <div class="panel category-panel">
+                    <h3>Mis Categorías</h3>
+                    <div class="cat-form">
+                        <div class="field">
+                            <input type="text" id="new-category-name" placeholder="Nombre...">
+                        </div>
+                        <div class="field">
+                            <select id="new-category-type">
+                                <option value="income">Ingreso</option>
+                                <option value="expense">Gasto</option>
+                            </select>
+                        </div>
+                        <button id="add-category-btn">+</button>
+                    </div>
+                    <div id="categories-list" class="categories-cloud"></div>
+                </div>
+            </div>
+
+            <section class="history-panel">
+                <div class="history-header">
+                    <h3 id="history-title">Historial Reciente</h3>
+                    <button id="clear-data-btn" class="btn-text-clear">Limpiar todo</button>
+                </div>
+                <div class="transaction-list" id="transaction-list"></div>
+            </section>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
