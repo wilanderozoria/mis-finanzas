@@ -493,31 +493,87 @@ input:focus, select:focus { outline: none; border-bottom-color: var(--accent); }
     }
     .hero-subtitle { margin: 0 auto 40px; }
     .hero-actions { justify-content: center; }
-    .charts-grid { grid-template-columns: 1fr; }
-    .app-content-grid { grid-template-columns: 1fr; }
-    .quick-stats { grid-template-columns: 1fr; }
-    .time-scale-selector { flex-direction: column; gap: 20px; text-align: center; }
+    .charts-grid { grid-template-columns: 1fr; gap: 30px; }
+    .app-content-grid { grid-template-columns: 1fr; gap: 30px; }
+    .quick-stats { grid-template-columns: 1fr; gap: 20px; }
+    .time-scale-selector { flex-direction: column; gap: 20px; text-align: center; padding: 20px; }
     .cycle-config { justify-content: center; }
 }
 
 @media (max-width: 768px) {
     .nav-menu { display: none; }
     .hero-title { font-size: 2.5rem; }
-    .app-main { padding: 20px 15px; }
+
+    .app-main {
+        padding: 20px 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
     .app-nav-container { padding: 0 15px; }
-    .panel { padding: 20px; }
-    .cat-form { grid-template-columns: 1fr; gap: 15px; }
-    .cat-form button { width: 100%; height: 48px; }
-    .field-row { grid-template-columns: 1fr; }
-    .stat-item { padding: 20px; }
-    .stat-item h2 { font-size: 1.8rem; }
-    .stat-item p { font-size: 1.5rem; }
+
+    .panel {
+        padding: 24px 15px;
+        width: 100%;
+        max-width: 500px;
+        margin: 0 auto;
+    }
+
+    .cat-form {
+        grid-template-columns: 1fr;
+        gap: 15px;
+        margin-bottom: 30px;
+    }
+
+    .cat-form button {
+        width: 100%;
+        height: 50px;
+        font-weight: 700;
+    }
+
+    .field-row { grid-template-columns: 1fr; gap: 20px; }
+
+    .field { margin-bottom: 25px; }
+
+    input, select {
+        padding: 14px 0;
+        font-size: 1.1rem;
+    }
+
+    .stat-item {
+        padding: 25px 15px;
+        width: 100%;
+        max-width: 500px;
+        margin: 0 auto;
+    }
+
+    .stat-item h2 { font-size: 2rem; }
+    .stat-item p { font-size: 1.6rem; }
+
+    .chart-container { height: 200px; }
+
+    .transaction-item {
+        padding: 20px 15px;
+        margin-bottom: 8px;
+    }
 }
 
 @media (max-width: 480px) {
     .hero-title { font-size: 2rem; }
     .hero-container { padding-top: 100px; }
     .visual-card { width: 300px; height: 300px; }
-    .scale-options { flex-wrap: wrap; justify-content: center; }
-    .scale-btn { padding: 6px 12px; font-size: 0.75rem; }
+    .scale-options {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+    }
+    .scale-btn {
+        padding: 10px 15px;
+        font-size: 0.8rem;
+        flex-grow: 1;
+        text-align: center;
+    }
+    .app-main { padding: 20px 10px; }
+    .panel { padding: 20px 12px; }
 }
